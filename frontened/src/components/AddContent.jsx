@@ -1,103 +1,75 @@
 import React, { useEffect, useState } from "react";
-import { useContentContext } from "../context/Content_context";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Auth_context";
+import { usePosts } from "../context/PostContext";
 import isNotEmpty from "../utils/validation";
 
 function AddContent() {
-  const { addContent } = useContentContext();
-  const navigate = useNavigate();
+  const { addPost } = usePosts();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const [owner, setOwner] = useState(user?.username || "");
-  // const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [category, setCategory] = useState("");
-  const [error, setError] = useState("");
   const [imgurl, setImgurl] = useState("");
-  
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const draft = localStorage.getItem("contentDraft");
     if (draft) {
       try {
-        const { title, body, category, imgurl } = JSON.parse(draft);
-        // setTitle(title || "");
+        const { body, imgurl } = JSON.parse(draft);
         setBody(body || "");
-        setCategory(category || "Misc");
         setImgurl(imgurl || "");
-      } catch (err) {
-        console.error("Error in parsing draft ", err);
-      }
+      } catch {}
     }
   }, []);
 
-
-
-
-  const handleSubmit = (e) => {
-        
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!isNotEmpty(body)) {
-      setError("Please fill in both title and body.");
+      setError("Body is required");
       return;
     }
 
-    const newContent = {
-      id: Date.now(),
-      owner,
-      // title,
-      body,
-      category,
-      imgurl,
-      date: new Date().toLocaleString(),
-      author: user.username,
-    };
+    if (!user) {
+      setError("Please login first");
+      return;
+    }
 
-    console.log(newContent);
-    addContent(newContent);
-    setOwner("");
-    // setTitle("");
+    await addPost(body, imgurl);
+
     setBody("");
-    setCategory("");
-    setError("");
     setImgurl("");
+    setError("");
     localStorage.removeItem("contentDraft");
-    navigate(`/view/${user.username}`);
+
+    navigate("/view");
   };
 
   return (
-    
     <div className="max-w-xl mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg text-white">
       <h2 className="text-3xl font-bold text-center mb-6">Add Content</h2>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* <div>
-          <label className="block text-sm font-medium mb-1">Enter Title:</label>
-          <input
-            className="w-full p-2 border border-gray-500 rounded-lg bg-gray-700 text-white"
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            type="text"
-            value={title}
-          />
-        </div> */}
         <div>
           <label className="block text-sm font-medium mb-1">Enter Body:</label>
           <textarea
             className="w-full p-2 border border-gray-500 rounded-lg bg-gray-700 text-white h-28"
+            value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Body"
-            value={body}
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium mb-1">Enter Image URL:</label>
           <input
             className="w-full p-2 border border-gray-500 rounded-lg bg-gray-700 text-white"
             type="url"
-            placeholder="Image URL"
-            onChange={(e) => setImgurl(e.target.value)}
             value={imgurl}
+            onChange={(e) => setImgurl(e.target.value)}
+            placeholder="Image URL"
           />
         </div>
 

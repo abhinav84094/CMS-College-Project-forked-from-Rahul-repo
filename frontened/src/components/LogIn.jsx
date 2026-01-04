@@ -19,7 +19,7 @@ function LogIn() {
     const result = await login(username, password);
 
     if (result.success) {
-      navigate(`/view/${username}`); // Redirect on successful login
+      navigate(`/view`); // Redirect on successful login
     } else {
       setError(result.error || 'Invalid username or password');
       return;

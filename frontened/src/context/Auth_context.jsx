@@ -1,63 +1,70 @@
-import React, { createContext, useEffect, useState , useContext} from 'react'
+import React, { createContext, useContext, useState } from "react";
+import { api } from "../utils/api";
 
 const AuthContext = createContext();
 
+export default function AuthProvider({ children }) {
+  const [user, setUser] = useState(
+    JSON.parse(localStorage.getItem("user")) || null
+  );
+  const [loading, setLoading] = useState(false);
 
-export default function AuthProvider({children}) {
+  // LOGIN (BACKEND)
+  const login = async (username, password) => {
+    try {
+      setLoading(true);
 
-    const [user, setUser] = useState("");
+      const res = await api.login({
+        name: username,   // 🔑 mapping username → backend "name"
+        password,
+      });
 
-    const [users, setUsers] = useState(()=>{
-        const storeUsers = localStorage.getItem('users');
-        return storeUsers ? JSON.parse(storeUsers) : [{username: "admin", password: "password"}] ;
-    });
+      setUser(res.user);
+      localStorage.setItem("user", JSON.stringify(res.user));
 
-    useEffect(()=>{
-        localStorage.setItem('users', JSON.stringify(users));
-    }, [users])
-
-    const login = (username, password)=>{
-        const foundUsername = users.find((u)=>{
-            return u.username === username  ;
-        });
-
-        const found = users.find((u)=>{
-            return username===u.username && password === u.password;
-        })
-
-        if(!foundUsername){
-            return {success: false, message: "username not found"};
-        }
-
-        if(found){
-            setUser({username});
-            return {success: true};
-
-        }
-
-        return {success: false, message: "incorrect password"};
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || "Invalid credentials",
+      };
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const signUp = (username, password) =>{
-        const exists = users.some((u)=>u.username === username);
-        if(exists){
-            return {success: false, message: "username already taken"};
-        }
+  //  SIGNUP (BACKEND)
+  const signUp = async (username, password) => {
+    try {
+      setLoading(true);
 
-        const newUser = {username, password};
-        setUsers((prev)=>[...prev, newUser]);
-        setUser({username});
-        return {success : true};
+      const res = await api.register({
+        name: username,
+        password,
+      });
+
+      return { success: true, message: res.message };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || "Signup failed",
+      };
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const logOut = ()=>setUser(null);
+  //  LOGOUT
+  const logOut = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
 
-    return (
-        <AuthContext.Provider value={{user,users, login, signUp, logOut }}>
-            {children}
-        </AuthContext.Provider>
-    )
-
+  return (
+    <AuthContext.Provider value={{ user, login, signUp, logOut, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-export const useAuth = ()=> useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext);

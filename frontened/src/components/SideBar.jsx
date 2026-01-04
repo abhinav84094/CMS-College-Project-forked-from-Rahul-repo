@@ -25,7 +25,7 @@ function SideBar() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to={`/view/${user.username}`}>
+                <NavLink to={`/view`}>
                   View Content
                 </NavLink>
               </li>
